@@ -8,9 +8,9 @@ push:
 	sleep 0.3; \
 	git push origin $$BRANCH
 master:
-	git pull origin master; \
+	git pull origin main; \
 	sleep 0.3; \
 	git add .; \
 	git commit -m "update"; \
 	sleep 0.3; \
-	git push origin master
+	git push origin main
