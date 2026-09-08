@@ -1,1 +1,5 @@
-.env
+work
+**/.env
+**/*.json
+**/*.png
+**/*.venv

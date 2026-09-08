@@ -8,7 +8,7 @@ from vnstock.ui import Market
 
 def send_msg(msg):
     print(msg)
-    # bot.send_message(CHAT_ID, msg, parse_mode="Markdown")
+    bot.send_message(CHAT_ID, msg, parse_mode="Markdown")
 
 
 def get_volume(data, column):
@@ -17,7 +17,7 @@ def get_volume(data, column):
     return int(float(data[column].values[0]))
 
 
-def build_alert(symbol, kind, delta, limit, tgiximestamp):
+def build_alert(symbol, kind, delta, limit, timestamp):
     alert_config = {
         "buy": ("🚨", "GOMMM!", "📥", "gom", "🔥"),
         "sell": ("⚠️", "XẢAA!", "📤", "xả", "💥"),
