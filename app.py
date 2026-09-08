@@ -8,7 +8,7 @@ from vnstock.ui import Market
 
 def send_msg(msg):
     print(msg)
-    bot.send_message(CHAT_ID, msg, parse_mode="Markdown")
+    # bot.send_message(CHAT_ID, msg, parse_mode="Markdown")
 
 
 def get_volume(data, column):
