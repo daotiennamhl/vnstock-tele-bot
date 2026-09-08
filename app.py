@@ -5,6 +5,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from vnstock.ui import Market
 from zoneinfo import ZoneInfo
+import sys
 
 def send_msg(msg):
     print(msg)
@@ -17,29 +18,16 @@ def get_volume(data, column):
     return int(float(data[column].values[0]))
 
 
-def build_alert(symbol, kind, delta, limit, timestamp):
-    alert_config = {
-        "buy": ("🚨", "GOMMM!", "📥", "gom", "🔥"),
-        "sell": ("⚠️", "XẢAA!", "📤", "xả", "💥"),
-    }
-    icon, title, volume_icon, action, ending = alert_config[kind]
-    return (
-        f"{icon} *[{symbol}] {title}* {icon}\n"
-        f"⏱ Thời gian: `{timestamp.strftime('%H:%M:%S')}`\n"
-        f"{volume_icon} Lượng {action} trong {INTERVAL_IN_MINUTE} phút: `+{delta:,}` CP > `{limit:,}` CP{ending}\n"
+def build_alert(alerts, timestamp):
+    lines = [
+        "🚨 *CẢNH BÁO KHỐI LƯỢNG*",
+        f"⏱ Thời gian: `{timestamp.strftime('%H:%M:%S')}`",
+    ]
+    lines.extend(
+        f"`{symbol}` | {action}: `{delta:+,}` CP"
+        for symbol, action, delta in alerts
     )
-
-
-def check_alert(symbol, kind, delta, threshold, timestamp):
-    limit = threshold * INTERVAL_IN_MINUTE
-    if delta >= limit:
-        action = "MUA" if kind == "buy" else "BÁN"
-        with open("foreign-log.txt", "a", encoding="utf-8") as log_file:
-            log_file.write(
-                f"{timestamp:%Y-%m-%d %H:%M:%S} | {symbol} | "
-                f"{action} | Khối lượng: {delta:,} CP\n"
-            )
-        send_msg(build_alert(symbol, kind, delta, limit, timestamp))
+    return "\n".join(lines)
 
 
 def get_current_volumes(data):
@@ -69,6 +57,8 @@ WATCH_PORTFOLIO = {
     for symbol in group.split()
 }
 
+START_TRADING_TIME = 9
+END_TRADING_TIME = 15
 DEFAULT_INTERVAL = 60
 INTERVAL = 120
 INTERVAL_IN_MINUTE = INTERVAL / DEFAULT_INTERVAL
@@ -85,8 +75,13 @@ while True:
     try:
         now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
         # Kiểm tra giờ giao dịch (9h00 - 15h00, Thứ 2 - Thứ 6)
-        if now.weekday() < 5 and (9 <= now.hour < 15):
+        if (now.hour >= END_TRADING_TIME):
+            send_msg(f"[{now.strftime('%H:%M:%S')}] Đã đến khung giờ dừng (15:00). Tiến hành tắt app hoàn toàn...")
+            sys.exit(0)
+
+        if now.weekday() < 5 and (START_TRADING_TIME <= now.hour < END_TRADING_TIME):
             print('=========', now, '=========')
+            alerts = []
 
             for symbol, thresholds in WATCH_PORTFOLIO.items():
                 df = mkt.quote(symbol)
@@ -101,21 +96,22 @@ while True:
                     )
 
                     if symbol in last_data:
-                        for kind in ("buy", "sell"):
-                            delta = current[kind] - last_data[symbol][kind]
-                            check_alert(
-                                symbol,
-                                kind,
-                                delta,
-                                thresholds[f"{kind}_threshold"],
-                                now,
-                            )
+                        buy_delta = current["buy"] - last_data[symbol]["buy"]
+                        sell_delta = current["sell"] - last_data[symbol]["sell"]
+                        buy_limit = thresholds["buy_threshold"] * INTERVAL_IN_MINUTE
+                        sell_limit = thresholds["sell_threshold"] * INTERVAL_IN_MINUTE
+                        if buy_delta >= buy_limit:
+                            alerts.append((symbol, "🟢", buy_delta))
+                        if sell_delta >= sell_limit:
+                            alerts.append((symbol, "🔻", sell_delta))
 
                     last_data[symbol] = current
                 
                 time.sleep(1.5)
 
             print('=========', 'END', '=========')
+            if alerts:
+                send_msg(build_alert(alerts, now))
         time.sleep(INTERVAL)
         
     except Exception as e:

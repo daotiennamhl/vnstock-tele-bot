@@ -3,3 +3,5 @@ work
 **/*.json
 **/*.png
 **/*.venv
+**/foreign-log.txt
+**/__pycache__
