@@ -4,11 +4,11 @@ import telebot
 from datetime import datetime
 from dotenv import load_dotenv
 from vnstock.ui import Market
-
+from zoneinfo import ZoneInfo
 
 def send_msg(msg):
     print(msg)
-    # bot.send_message(CHAT_ID, msg, parse_mode="Markdown")
+    bot.send_message(CHAT_ID, msg, parse_mode="Markdown")
 
 
 def get_volume(data, column):
@@ -83,7 +83,7 @@ send_msg(f"🚀 Bot đã kích hoạt chế độ canh gác đột biến theo p
 
 while True:
     try:
-        now = datetime.now()
+        now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
         # Kiểm tra giờ giao dịch (9h00 - 15h00, Thứ 2 - Thứ 6)
         if now.weekday() < 5 and (9 <= now.hour < 15):
             print('=========', now, '=========')
