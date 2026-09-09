@@ -42,25 +42,25 @@ load_dotenv()
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
-DEFAULT_THRESHOLD = 25_000
 WATCH_SYMBOL_GROUPS = (
-    "STB CTG TCB VPB",  # bank
-    "HCM VIX TCX SSI",  # chứng
-    "NLG TCH KDH",  # đất
-    "GAS BCM GVR",  # Nhà nước
-    "FPT MSN DGW VSC",  # Linh tinh
-    "VIC GEX",  # Vin, GELEX
+    ("STB CTG TCB VPB SHB VCB HDB ACB", 40_000),  # bank
+    ("SSI VIX HCM VND VCI TCX VPX VCK", 20_000),  # chứng
+    ("NLG TCH KDH CII NVL DXG", 20_000),  # đất
+    ("GAS BCM GVR", 20_000),  # Nhà nước
+    ("FPT MSN DGW VSC MCH BSR", 20_000),  # Linh tinh
+    ("VIC VHM GEX", 20_000),  # Vin
 )
+
 WATCH_PORTFOLIO = {
-    symbol: {"buy_threshold": DEFAULT_THRESHOLD, "sell_threshold": DEFAULT_THRESHOLD}
-    for group in WATCH_SYMBOL_GROUPS
+    symbol: {"buy_threshold": threshold, "sell_threshold": threshold}
+    for group, threshold in WATCH_SYMBOL_GROUPS
     for symbol in group.split()
 }
 
 START_TRADING_TIME = 9
 END_TRADING_TIME = 15
 DEFAULT_INTERVAL = 60
-INTERVAL = 120
+INTERVAL = 150
 INTERVAL_IN_MINUTE = INTERVAL / DEFAULT_INTERVAL
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
@@ -82,11 +82,13 @@ while True:
         if now.weekday() < 5 and (START_TRADING_TIME <= now.hour < END_TRADING_TIME):
             print('=========', now, '=========')
             alerts = []
+            symbols = list(WATCH_PORTFOLIO)
+            df = mkt.quote(symbols)
 
             for symbol, thresholds in WATCH_PORTFOLIO.items():
-                df = mkt.quote(symbol)
-                if df is not None and not df.empty:
-                    current = get_current_volumes(df)
+                symbol_data = df[df["symbol"] == symbol] if df is not None and not df.empty else None
+                if symbol_data is not None and not symbol_data.empty:
+                    current = get_current_volumes(symbol_data)
                     print(
                         symbol,
                         current["close_price"],
@@ -106,8 +108,6 @@ while True:
                             alerts.append((symbol, "🔻", sell_delta))
 
                     last_data[symbol] = current
-                
-                time.sleep(1.5)
 
             print('=========', 'END', '=========')
             if alerts:
