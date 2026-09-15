@@ -70,7 +70,7 @@ WATCH_SYMBOL_GROUPS = (
     ("BCM", 3000),
     ("VIC VHM VRE GEX GEE VSC VGC", 20_000),  # Vin gex
     ("FPT MSN DGW MCH BSR GMD ANV", 20_000),  # Linh tinh
-    ("PVD PVS OIL BSR", 20_000), # Dầu
+    ("PVD PVS OIL BSR DPM DCM", 20_000), # Dầu Phân
 )
 
 WATCH_PORTFOLIO = {
