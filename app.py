@@ -37,6 +37,28 @@ def get_current_volumes(data):
         "close_price": get_volume(data, "close_price")
     }
 
+
+def evaluate_symbol_alerts(symbol, current, previous, thresholds):
+    if previous is None:
+        return []
+
+    alerts = []
+    buy_delta = current["buy"] - previous["buy"]
+    sell_delta = current["sell"] - previous["sell"]
+    buy_limit = thresholds["buy_threshold"] * INTERVAL_IN_MINUTE
+    sell_limit = thresholds["sell_threshold"] * INTERVAL_IN_MINUTE
+
+    if buy_delta >= buy_limit:
+        alerts.append((symbol, "🟢", buy_delta))
+        print(f"[ALERT] {symbol} BUY | delta={buy_delta:,} | threshold={buy_limit:,}")
+
+    if sell_delta >= sell_limit:
+        alerts.append((symbol, "🔻", sell_delta))
+        print(f"[ALERT] {symbol} SELL | delta={sell_delta:,} | threshold={sell_limit:,}")
+
+    return alerts
+
+
 load_dotenv()
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
@@ -54,8 +76,14 @@ WATCH_SYMBOL_GROUPS = (
 
 WATCH_PORTFOLIO = {
     symbol: {"buy_threshold": threshold, "sell_threshold": threshold}
-    for group, threshold in WATCH_SYMBOL_GROUPS
-    for symbol in group.split()
+    for symbol, threshold in sorted(
+        (
+            (symbol, threshold)
+            for group, threshold in WATCH_SYMBOL_GROUPS
+            for symbol in group.split()
+        ),
+        key=lambda item: item[0],
+    )
 }
 
 START_TRADING_TIME = 9
@@ -75,21 +103,26 @@ send_msg(f"🚀 Bot đã kích hoạt chế độ canh gác đột biến theo p
 while True:
     try:
         now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
-        # Kiểm tra giờ giao dịch (9h00 - 15h00, Thứ 2 - Thứ 6)
-        if (now.hour >= END_TRADING_TIME):
+        if now.hour >= END_TRADING_TIME:
             send_msg(f"[{now.strftime('%H:%M:%S')}] Đã đến khung giờ dừng (15:00). Tiến hành tắt app hoàn toàn...")
             sys.exit(0)
 
         if now.weekday() < 5 and (START_TRADING_TIME <= now.hour < END_TRADING_TIME):
-            print('=========', now, '=========')
+            print(f"========= {now} =========")
             alerts = []
             symbols = list(WATCH_PORTFOLIO)
             df = mkt.quote(symbols)
 
-            for symbol, thresholds in WATCH_PORTFOLIO.items():
-                symbol_data = df[df["symbol"] == symbol] if df is not None and not df.empty else None
-                if symbol_data is not None and not symbol_data.empty:
+            if df is None or df.empty:
+                print("[INFO] Không có dữ liệu quote trong vòng lặp hiện tại.")
+            else:
+                for symbol, thresholds in WATCH_PORTFOLIO.items():
+                    symbol_data = df[df["symbol"] == symbol]
+                    if symbol_data.empty:
+                        continue
+
                     current = get_current_volumes(symbol_data)
+                    previous = last_data.get(symbol)
                     print(
                         symbol,
                         current["close_price"],
@@ -98,23 +131,15 @@ while True:
                         current["buy"] - current["sell"],
                     )
 
-                    if symbol in last_data:
-                        buy_delta = current["buy"] - last_data[symbol]["buy"]
-                        sell_delta = current["sell"] - last_data[symbol]["sell"]
-                        buy_limit = thresholds["buy_threshold"] * INTERVAL_IN_MINUTE
-                        sell_limit = thresholds["sell_threshold"] * INTERVAL_IN_MINUTE
-                        if buy_delta >= buy_limit:
-                            alerts.append((symbol, "🟢", buy_delta))
-                        if sell_delta >= sell_limit:
-                            alerts.append((symbol, "🔻", sell_delta))
-
+                    alerts.extend(evaluate_symbol_alerts(symbol, current, previous, thresholds))
                     last_data[symbol] = current
 
-            print('=========', 'END', '=========')
+            print("========= END =========")
             if alerts:
                 send_msg(build_alert(alerts, now))
+
         time.sleep(INTERVAL)
-        
+
     except Exception as e:
         print(f"Lỗi hệ thống: {e}. Đang thử lại sau 10 giây...")
         time.sleep(10)
