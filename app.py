@@ -46,9 +46,10 @@ WATCH_SYMBOL_GROUPS = (
     ("STB CTG TCB VPB SHB VCB HDB ACB", 40_000),  # bank
     ("SSI VIX HCM VND VCI TCX VPX VCK", 20_000),  # chứng
     ("NLG TCH KDH CII NVL DXG", 20_000),  # đất
-    ("GAS BCM GVR", 20_000),  # Nhà nước
-    ("FPT MSN DGW VSC MCH BSR", 20_000),  # Linh tinh
-    ("VIC VHM GEX", 20_000),  # Vin
+    ("GAS GVR BID", 20_000),  # Nhà nước
+    ("BCM", 3000),
+    ("FPT MSN DGW MCH BSR BVH GMD ANV", 20_000),  # Linh tinh
+    ("VIC VHM GEX GEE VSC VGC", 20_000),  # Vin
 )
 
 WATCH_PORTFOLIO = {
