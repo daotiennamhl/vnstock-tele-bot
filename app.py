@@ -50,11 +50,9 @@ def evaluate_symbol_alerts(symbol, current, previous, thresholds):
 
     if buy_delta >= buy_limit:
         alerts.append((symbol, "🟢", buy_delta))
-        print(f"[ALERT] {symbol} BUY | delta={buy_delta:,} | threshold={buy_limit:,}")
 
     if sell_delta >= sell_limit:
         alerts.append((symbol, "🔻", sell_delta))
-        print(f"[ALERT] {symbol} SELL | delta={sell_delta:,} | threshold={sell_limit:,}")
 
     return alerts
 
@@ -68,10 +66,10 @@ WATCH_SYMBOL_GROUPS = (
     ("STB CTG TCB VPB SHB VCB HDB ACB BID MBB VIB", 40_000),  # bank
     ("SSI VIX HCM VND VCI TCX VPX VCK SHS CTS", 20_000),  # chứng
     ("NLG TCH KDH CII NVL DXG CEO PDR", 20_000),  # đất
-    ("GAS GVR PLX", 20_000),  # Nhà nước
+    ("GAS GVR PLX BVH", 20_000),  # Nhà nước
     ("BCM", 3000),
     ("VIC VHM VRE GEX GEE VSC VGC", 20_000),  # Vin gex
-    ("FPT MSN DGW MCH BSR BVH GMD ANV", 20_000),  # Linh tinh
+    ("FPT MSN DGW MCH BSR GMD ANV", 20_000),  # Linh tinh
     ("PVD PVS OIL BSR", 20_000), # Dầu
 )
 
