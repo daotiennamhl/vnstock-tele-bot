@@ -65,12 +65,12 @@ CHAT_ID = os.getenv("CHAT_ID")
 WATCH_SYMBOL_GROUPS = (
     ("STB CTG TCB VPB SHB VCB HDB ACB BID MBB VIB", 40_000),  # bank
     ("SSI VIX HCM VND VCI TCX VPX VCK SHS CTS", 20_000),  # chứng
-    ("NLG TCH KDH CII NVL DXG CEO PDR", 20_000),  # đất
+    ("NLG TCH KDH CII NVL DXG DIG CEO PDR", 20_000),  # đất
     ("GAS GVR PLX BVH", 20_000),  # Nhà nước
     ("BCM", 3000),
     ("VIC VHM VRE GEX GEE VSC VGC", 20_000),  # Vin gex
-    ("FPT MSN DGW MCH BSR GMD ANV", 20_000),  # Linh tinh
-    ("PVD PVS OIL BSR DPM DCM", 20_000), # Dầu Phân
+    ("FPT FRT CMG MSN MCH DGW GMD ANV", 20_000),  # Linh tinh
+    ("PVD PVC PVS OIL BSR DPM DCM", 20_000), # Dầu Phân
 )
 
 WATCH_PORTFOLIO = {
