@@ -63,14 +63,15 @@ TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 
 WATCH_SYMBOL_GROUPS = (
-    ("STB CTG TCB VPB SHB VCB HDB ACB BID MBB VIB MSB", 40_000),  # bank
+    ("STB CTG TCB VPB SHB VCB HDB ACB BID MBB VIB MSB HPG", 40_000),  # bank
     ("SSI VIX HCM VND VCI TCX VPX VCK SHS CTS", 20_000),  # chứng
     ("NLG TCH KDH CII NVL DXG DIG CEO PDR HDC", 20_000),  # đất
     ("GAS GVR PLX BVH POW", 20_000),  # Nhà nước
-    ("BCM", 3000),
+    ("BCM VTP", 3000),
     ("VIC VHM VRE GEX GEE VSC VGC HAH PET", 20_000),  # Vin gex
     ("FPT FRT CMG MSN MCH DGW MWG GMD ANV", 20_000),  # Linh tinh
     ("PVT PVD PVC PVS OIL BSR DPM DCM", 20_000), # Dầu Phân
+    # ("BCM GAS DGW BSR MSN PVT MSB", 20_000),  # Current attention
 )
 
 WATCH_PORTFOLIO = {
