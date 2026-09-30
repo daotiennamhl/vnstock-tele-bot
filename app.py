@@ -24,8 +24,8 @@ def build_alert(alerts, timestamp):
         f"⏱ Thời gian: `{timestamp.strftime('%H:%M:%S')}`",
     ]
     lines.extend(
-        f"`{symbol}` | {action}: `{delta:+,}` CP"
-        for symbol, action, delta in alerts
+        f"`{symbol}` | {action}: `{delta:+,}` CP | Giá: `{price:,.2f}`"
+        for symbol, action, delta, price in alerts
     )
     return "\n".join(lines)
 
@@ -34,7 +34,7 @@ def get_current_volumes(data):
     return {
         "buy": get_volume(data, "foreign_buy_volume"),
         "sell": get_volume(data, "foreign_sell_volume"),
-        "close_price": get_volume(data, "close_price")
+        "close_price": get_volume(data, "close_price"),
     }
 
 
@@ -49,10 +49,10 @@ def evaluate_symbol_alerts(symbol, current, previous, thresholds):
     sell_limit = thresholds["sell_threshold"] * INTERVAL_IN_MINUTE
 
     if buy_delta >= buy_limit:
-        alerts.append((symbol, "🟢", buy_delta))
+        alerts.append((symbol, "🟢", buy_delta, current["close_price"]))
 
     if sell_delta >= sell_limit:
-        alerts.append((symbol, "🔻", sell_delta))
+        alerts.append((symbol, "🔻", sell_delta, current["close_price"]))
 
     return alerts
 
@@ -87,7 +87,7 @@ WATCH_PORTFOLIO = {
 }
 
 START_TRADING_TIME = 9
-END_TRADING_TIME = 15
+END_TRADING_TIME = 18
 DEFAULT_INTERVAL = 60
 INTERVAL = 150
 INTERVAL_IN_MINUTE = INTERVAL / DEFAULT_INTERVAL
