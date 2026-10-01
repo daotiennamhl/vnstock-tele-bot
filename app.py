@@ -91,6 +91,7 @@ END_TRADING_TIME = 18
 DEFAULT_INTERVAL = 60
 INTERVAL = 150
 INTERVAL_IN_MINUTE = INTERVAL / DEFAULT_INTERVAL
+now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 mkt = Market()
@@ -98,11 +99,10 @@ mkt = Market()
 # Bộ nhớ đệm lưu khối lượng phút trước
 last_data = {}
 
-send_msg(f"🚀 Bot đã kích hoạt chế độ canh gác đột biến theo phút cho {len(WATCH_PORTFOLIO)} mã cổ phiếu!")
+send_msg(f"🚀 Bot đã kích hoạt chế độ canh gác đột biến theo phút cho {len(WATCH_PORTFOLIO)} mã cổ phiếu! {now}")
 
 while True:
     try:
-        now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
         if now.hour >= END_TRADING_TIME:
             send_msg(f"[{now.strftime('%H:%M:%S')}] Đã đến khung giờ dừng (15:00). Tiến hành tắt app hoàn toàn...")
             sys.exit(0)
