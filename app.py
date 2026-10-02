@@ -24,7 +24,7 @@ def build_alert(alerts, timestamp):
         f"⏱ Thời gian: `{timestamp.strftime('%H:%M:%S')}`",
     ]
     lines.extend(
-        f"`{symbol}` | {action}: `{delta:+,}` CP | Giá: `{price / 1000:,.2f}`"
+        f"`{symbol}` | {action}: `{delta:+,}` | `{price / 1000:,.2f}`"
         for symbol, action, delta, price in alerts
     )
     return "\n".join(lines)
@@ -123,10 +123,10 @@ while True:
                     current = get_current_volumes(symbol_data)
                     previous = last_data.get(symbol)
                     print(
-                        f'{symbol} | Giá: {current["close_price"] / 1000:,.2f} | '
-                        f'Khối ngoại mua: {current["buy"]:,} | '
-                        f'bán: {current["sell"]:,} | '
-                        f'ròng: {current["buy"] - current["sell"]:+,}'
+                        f'{symbol} | Price: {current["close_price"] / 1000:,.2f} | '
+                        f'Buy: {current["buy"]:,} | '
+                        f'Sell: {current["sell"]:,} | '
+                        f'Net: {current["buy"] - current["sell"]:+,}'
                     )
 
                     alerts.extend(evaluate_symbol_alerts(symbol, current, previous, thresholds))
