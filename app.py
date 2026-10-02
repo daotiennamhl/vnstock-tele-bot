@@ -18,6 +18,44 @@ def get_volume(data, column):
     return int(float(data[column].values[0]))
 
 
+def parse_price_alerts(value):
+    """Parse PRICE_ALERTS entries as SYMBOL:above|below:PRICE, using thousand VND."""
+    price_alerts = {}
+    for entry in value.split(","):
+        entry = entry.strip()
+        if not entry:
+            continue
+
+        parts = entry.split(":")
+        if len(parts) != 3:
+            raise ValueError(
+                f"Cấu hình PRICE_ALERTS không hợp lệ: {entry!r}. "
+                "Dùng định dạng SYMBOL:above|below:PRICE."
+            )
+
+        symbol, direction, price = (part.strip() for part in parts)
+        symbol = symbol.upper()
+        direction = direction.lower()
+        if not symbol or direction not in {"above", "below"}:
+            raise ValueError(
+                f"Cấu hình PRICE_ALERTS không hợp lệ: {entry!r}. "
+                "Hướng phải là above hoặc below."
+            )
+
+        try:
+            threshold = float(price)
+        except ValueError as error:
+            raise ValueError(
+                f"Giá trong cấu hình PRICE_ALERTS không hợp lệ: {price!r}."
+            ) from error
+        if threshold <= 0:
+            raise ValueError(f"Giá PRICE_ALERTS phải lớn hơn 0: {price!r}.")
+
+        price_alerts.setdefault(symbol, []).append((direction, threshold))
+
+    return price_alerts
+
+
 def build_alert(alerts, timestamp):
     lines = [
         "🚨 *CẢNH BÁO KHỐI LƯỢNG*",
@@ -30,12 +68,41 @@ def build_alert(alerts, timestamp):
     return "\n".join(lines)
 
 
+def build_price_alert(alerts, timestamp):
+    lines = [
+        "📊 *CẢNH BÁO GIÁ CỔ PHIẾU*",
+        f"⏱ Thời gian: `{timestamp.strftime('%H:%M:%S')}`",
+    ]
+    lines.extend(
+        f"`{symbol}` | {icon} {label} `{threshold:,.2f}` "
+        f"(giá hiện tại: `{current_price:,.2f}`)"
+        for symbol, icon, label, threshold, current_price in alerts
+    )
+    return "\n".join(lines)
+
+
 def get_current_volumes(data):
     return {
         "buy": get_volume(data, "foreign_buy_volume"),
         "sell": get_volume(data, "foreign_sell_volume"),
         "close_price": get_volume(data, "close_price"),
     }
+
+
+def evaluate_price_alerts(symbol, current_price, previous_price, rules):
+    if previous_price is None:
+        return []
+
+    alerts = []
+    for direction, threshold in rules:
+        crossed_up = direction == "above" and previous_price < threshold <= current_price
+        crossed_down = direction == "below" and previous_price > threshold >= current_price
+        if crossed_up:
+            alerts.append((symbol, "💣", "Tăng qua", threshold, current_price))
+        elif crossed_down:
+            alerts.append((symbol, "💣", "Giảm qua", threshold, current_price))
+
+    return alerts
 
 
 def evaluate_symbol_alerts(symbol, current, previous, thresholds):
@@ -84,6 +151,7 @@ WATCH_PORTFOLIO = {
         key=lambda item: item[0],
     )
 }
+PRICE_ALERTS = parse_price_alerts(os.getenv("PRICE_ALERTS", ""))
 
 START_TRADING_TIME = 9
 END_TRADING_TIME = 15
@@ -102,6 +170,7 @@ send_msg(f"🚀 Bot đã kích hoạt chế độ canh gác đột biến theo p
 
 while True:
     try:
+        now = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
         if now.hour >= END_TRADING_TIME:
             send_msg(f"[{now.strftime('%H:%M:%S')}] Đã đến khung giờ dừng (15:00). Tiến hành tắt app hoàn toàn...")
             sys.exit(0)
@@ -109,32 +178,48 @@ while True:
         if now.weekday() < 5 and (START_TRADING_TIME <= now.hour < END_TRADING_TIME):
             print(f"========= {now} =========")
             alerts = []
-            symbols = list(WATCH_PORTFOLIO)
+            price_alerts = []
+            symbols = sorted(set(WATCH_PORTFOLIO) | set(PRICE_ALERTS))
             df = mkt.quote(symbols)
 
             if df is None or df.empty:
                 print("[INFO] Không có dữ liệu quote trong vòng lặp hiện tại.")
             else:
-                for symbol, thresholds in WATCH_PORTFOLIO.items():
+                for symbol in symbols:
                     symbol_data = df[df["symbol"] == symbol]
                     if symbol_data.empty:
                         continue
 
                     current = get_current_volumes(symbol_data)
                     previous = last_data.get(symbol)
-                    print(
-                        f'{symbol} | Price: {current["close_price"] / 1000:,.2f} | '
-                        f'Buy: {current["buy"]:,} | '
-                        f'Sell: {current["sell"]:,} | '
-                        f'Net: {current["buy"] - current["sell"]:+,}'
-                    )
+                    if symbol in WATCH_PORTFOLIO:
+                        print(
+                            f'{symbol} | Price: {current["close_price"] / 1000:,.2f} | '
+                            f'Buy: {current["buy"]:,} | '
+                            f'Sell: {current["sell"]:,} | '
+                            f'Net: {current["buy"] - current["sell"]:+,}'
+                        )
+                        alerts.extend(
+                            evaluate_symbol_alerts(
+                                symbol, current, previous, WATCH_PORTFOLIO[symbol]
+                            )
+                        )
 
-                    alerts.extend(evaluate_symbol_alerts(symbol, current, previous, thresholds))
+                    price_alerts.extend(
+                        evaluate_price_alerts(
+                            symbol,
+                            current["close_price"] / 1000,
+                            previous["close_price"] / 1000 if previous else None,
+                            PRICE_ALERTS.get(symbol, []),
+                        )
+                    )
                     last_data[symbol] = current
 
             print("========= END =========")
             if alerts:
                 send_msg(build_alert(alerts, now))
+            if price_alerts:
+                send_msg(build_price_alert(price_alerts, now))
 
         time.sleep(INTERVAL)
 
