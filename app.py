@@ -123,11 +123,10 @@ while True:
                     current = get_current_volumes(symbol_data)
                     previous = last_data.get(symbol)
                     print(
-                        symbol,
-                        f'{current["close_price"] / 1000:,.2f}',
-                        current["buy"],
-                        current["sell"],
-                        current["buy"] - current["sell"],
+                        f'{symbol} | Giá: {current["close_price"] / 1000:,.2f} | '
+                        f'Khối ngoại mua: {current["buy"]:,} | '
+                        f'bán: {current["sell"]:,} | '
+                        f'ròng: {current["buy"] - current["sell"]:+,}'
                     )
 
                     alerts.extend(evaluate_symbol_alerts(symbol, current, previous, thresholds))
